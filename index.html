@@ -8,6 +8,90 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  #lock-screen {
+    position: fixed;
+    inset: 0;
+    background: #0f1117;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  #lock-box {
+    background: #1a1d27;
+    border: 0.5px solid #2a2d3e;
+    border-radius: 14px;
+    padding: 2.5rem 2rem;
+    width: 300px;
+    text-align: center;
+  }
+
+  #lock-box p.lock-label {
+    font-size: 12px;
+    color: #6b7280;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  #lock-box h2 {
+    font-size: 18px;
+    font-weight: 500;
+    color: #e8eaf0;
+    margin-bottom: 1.5rem;
+  }
+
+  #pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .pin-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #2a2d3e;
+    border: 1.5px solid #3a3d4e;
+    transition: background 0.15s;
+  }
+
+  .pin-dot.filled { background: #5C7CFA; border-color: #5C7CFA; }
+  .pin-dot.error  { background: #FF6B6B; border-color: #FF6B6B; }
+
+  #pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .pin-key {
+    background: #141620;
+    border: 0.5px solid #2a2d3e;
+    border-radius: 8px;
+    color: #e8eaf0;
+    font-size: 18px;
+    font-weight: 500;
+    padding: 14px;
+    cursor: pointer;
+    transition: background 0.1s;
+    font-family: inherit;
+  }
+
+  .pin-key:hover { background: #1e2130; }
+  .pin-key:active { background: #2a2d3e; }
+
+  .pin-key.del { font-size: 14px; color: #9ca3af; }
+
+  #lock-error {
+    margin-top: 1rem;
+    font-size: 12px;
+    color: #FF6B6B;
+    min-height: 16px;
+  }
+
   body {
     font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
     background: #0f1117;
@@ -227,6 +311,86 @@
 </style>
 </head>
 <body>
+
+<div id="lock-screen">
+  <div id="lock-box">
+    <p class="lock-label">접근 제한</p>
+    <h2>비밀번호를 입력하세요</h2>
+    <div id="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d4"></div>
+      <div class="pin-dot" id="d5"></div>
+    </div>
+    <div id="pin-keypad">
+      <button class="pin-key" onclick="pressKey('1')">1</button>
+      <button class="pin-key" onclick="pressKey('2')">2</button>
+      <button class="pin-key" onclick="pressKey('3')">3</button>
+      <button class="pin-key" onclick="pressKey('4')">4</button>
+      <button class="pin-key" onclick="pressKey('5')">5</button>
+      <button class="pin-key" onclick="pressKey('6')">6</button>
+      <button class="pin-key" onclick="pressKey('7')">7</button>
+      <button class="pin-key" onclick="pressKey('8')">8</button>
+      <button class="pin-key" onclick="pressKey('9')">9</button>
+      <button class="pin-key del" onclick="pressKey('clear')">초기화</button>
+      <button class="pin-key" onclick="pressKey('0')">0</button>
+      <button class="pin-key del" onclick="pressKey('del')">⌫</button>
+    </div>
+    <div id="lock-error"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const PW = '880802';
+  let input = '';
+
+  function updateDots(state) {
+    for (let i = 0; i < 6; i++) {
+      const d = document.getElementById('d' + i);
+      d.classList.remove('filled', 'error');
+      if (state === 'error') d.classList.add('error');
+      else if (i < input.length) d.classList.add('filled');
+    }
+  }
+
+  window.pressKey = function(key) {
+    if (key === 'del') {
+      input = input.slice(0, -1);
+      updateDots();
+    } else if (key === 'clear') {
+      input = '';
+      updateDots();
+      document.getElementById('lock-error').textContent = '';
+    } else {
+      if (input.length >= 6) return;
+      input += key;
+      updateDots();
+      if (input.length === 6) {
+        if (input === PW) {
+          document.getElementById('lock-screen').style.display = 'none';
+        } else {
+          updateDots('error');
+          document.getElementById('lock-error').textContent = '비밀번호가 틀렸습니다.';
+          setTimeout(() => {
+            input = '';
+            updateDots();
+            document.getElementById('lock-error').textContent = '';
+          }, 900);
+        }
+      }
+    }
+  };
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+    else if (e.key === 'Backspace') pressKey('del');
+    else if (e.key === 'Escape') pressKey('clear');
+  });
+})();
+</script>
 
 <header>
   <p class="eyebrow">Knox 닉네임 분석 · 2026.06.24 기준</p>
