@@ -448,31 +448,34 @@ DEPTS.forEach(d => {
   const hasOut = (NEW_PEOPLE['OUT_' + d.key] || []).length > 0;
 
   let diffHtml = '';
-  if (diff === 0) {
+  const newCount = (NEW_PEOPLE[d.key] || []).length;
+  const outCount = (NEW_PEOPLE['OUT_' + d.key] || []).length;
+  if (diff === 0 && newCount === 0 && outCount === 0) {
     diffHtml = `<span class="diff-badge flat">— 변동 없음</span>`;
   } else {
-    if (diff > 0) {
-      diffHtml += `<button class="diff-badge up" onclick="openToast('${d.key}', 'new')">▲ ${diff}명 증가</button>`;
+    if (newCount > 0) {
+      diffHtml += `<button class="diff-badge up" onclick="openToast('${d.key}', 'new')">▲ ${newCount}명 증가</button>`;
     }
-    if (diff < 0) {
-      diffHtml += `<button class="diff-badge down" onclick="openToast('${d.key}', 'out')">▼ ${Math.abs(diff)}명 감소</button>`;
+    if (outCount > 0) {
+      diffHtml += `<button class="diff-badge down" onclick="openToast('${d.key}', 'out')">▼ ${outCount}명 감소</button>`;
     }
-    // 순증감이 있어도 양방향 변동이 있을 수 있음
-    if (diff > 0 && hasOut) {
-      diffHtml += `<button class="diff-badge down" onclick="openToast('${d.key}', 'out')">▼ 감소 보기</button>`;
-    }
-    if (diff < 0 && hasNew) {
-      diffHtml += `<button class="diff-badge up" onclick="openToast('${d.key}', 'new')">▲ 증가 보기</button>`;
+    if (newCount === 0 && outCount === 0) {
+      diffHtml = `<span class="diff-badge flat">— 변동 없음</span>`;
     }
   }
 
+  const netDiffClass = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+  const netDiffStr = diff > 0 ? `+${diff}명` : diff < 0 ? `${diff}명` : `±0`;
   const div = document.createElement('div');
   div.className = 'dept-card';
   div.style.borderLeftColor = d.color;
   div.innerHTML = `
     <div class="d-label">${d.label}</div>
-    <div class="d-value">${d.today.toLocaleString()}<span>명</span></div>
-    <div class="d-diff-row">${diffHtml}</div>
+    <div style="display:flex; align-items:baseline; gap:8px;">
+      <div class="d-value">${d.today.toLocaleString()}<span>명</span></div>
+      <span class="${netDiffClass}" style="font-size:13px; font-weight:500;">${netDiffStr}</span>
+    </div>
+    <div class="d-diff-row" style="margin-top:6px;">${diffHtml}</div>
     <div class="d-pct">전체 비중 ${pct}% · 6/13 대비 ▲${diffFrom13}</div>
   `;
   div.addEventListener('click', () => showDetail(d));
