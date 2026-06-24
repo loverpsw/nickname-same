@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>닉네임 현황 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: #0f1117;
+    color: #e8eaf0;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: #5c6bc0;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.3;
+  }
+
+  h1 span {
+    color: #7986cb;
+  }
+
+  .subtitle {
+    margin-top: 0.4rem;
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+
+  .metric-card {
+    background: #1a1d27;
+    border: 0.5px solid #2a2d3e;
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+  }
+
+  .metric-card .label {
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .metric-card .value {
+    font-size: 26px;
+    font-weight: 600;
+    color: #e8eaf0;
+    line-height: 1.1;
+  }
+
+  .metric-card .value span {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 400;
+    margin-left: 2px;
+  }
+
+  .metric-card .change {
+    font-size: 12px;
+    margin-top: 4px;
+    color: #4caf50;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #9ca3af;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .chart-card {
+    background: #1a1d27;
+    border: 0.5px solid #2a2d3e;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .chart-card h2 {
+    font-size: 15px;
+    font-weight: 500;
+    color: #c8cad8;
+    margin-bottom: 1rem;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-bottom: 1rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .today-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+  }
+
+  .dept-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #141620;
+    border: 0.5px solid #2a2d3e;
+    border-radius: 8px;
+  }
+
+  .dept-color {
+    width: 4px;
+    height: 32px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .dept-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dept-name {
+    font-size: 12px;
+    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dept-count {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e8eaf0;
+    line-height: 1.2;
+  }
+
+  .dept-pct {
+    font-size: 11px;
+    color: #4b5563;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .small-dept-section {
+    margin-top: 1rem;
+  }
+
+  .small-dept-title {
+    font-size: 12px;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
+  }
+
+  .small-dept-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .small-dept-chip {
+    background: #141620;
+    border: 0.5px solid #2a2d3e;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  .small-dept-chip strong {
+    color: #9ca3af;
+    font-weight: 500;
+  }
+
+  .date-label {
+    font-size: 11px;
+    color: #4b5563;
+    text-align: right;
+    margin-top: 0.5rem;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 1rem; }
+    h1 { font-size: 22px; }
+    .metric-card .value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Knox 닉네임 분석 · 2026.06.24 기준</p>
+  <h1>닉네임에 <span>'같은'</span> 또는 <span>'패싱'</span>이<br>포함된 임직원 현황</h1>
+  <p class="subtitle">백업 데이터 기준 6월 13일 ~ 6월 24일 추이</p>
+</header>
+
+<div class="metrics">
+  <div class="metric-card">
+    <div class="label">오늘 기준 전체</div>
+    <div class="value">5,299<span>명</span></div>
+    <div class="change">▲ 373 (6/13 대비)</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">MX사업부</div>
+    <div class="value">2,522<span>명</span></div>
+    <div class="change">▲ 373 (6/13 대비)</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">네트워크사업부</div>
+    <div class="value">757<span>명</span></div>
+    <div class="change">▲ 64 (6/13 대비)</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">생활가전사업부</div>
+    <div class="value">731<span>명</span></div>
+    <div class="change">▲ 105 (6/13 대비)</div>
+  </div>
+</div>
+
+<div class="chart-card">
+  <h2>사업부별 인원 추이</h2>
+  <div class="legend" id="legend"></div>
+  <div style="position:relative; width:100%; height:300px;">
+    <canvas id="trendChart" role="img" aria-label="사업부별 닉네임 포함 임직원 추이"></canvas>
+  </div>
+</div>
+
+<div class="chart-card">
+  <h2>오늘(6월 24일) 기준 사업부별 인원</h2>
+  <div style="position:relative; width:100%; height:320px;">
+    <canvas id="barChart" role="img" aria-label="사업부별 인원 현황"></canvas>
+  </div>
+</div>
+
+<div class="chart-card">
+  <h2>주요 사업부 현황</h2>
+  <div class="today-grid" id="deptGrid"></div>
+  <div class="small-dept-section">
+    <p class="small-dept-title">기타 조직</p>
+    <div class="small-dept-list" id="smallDeptList"></div>
+  </div>
+  <p class="date-label">2026-06-24 기준</p>
+</div>
+
+<script>
+const DEPTS = [
+  { key: 'Mobile eXperience사업부', label: 'MX사업부', color: '#5C7CFA' },
+  { key: '네트워크사업부', label: '네트워크사업부', color: '#20C997' },
+  { key: '생활가전사업부', label: '생활가전사업부', color: '#FF6B6B' },
+  { key: '영상디스플레이사업부', label: '영상디스플레이', color: '#FCC419' },
+  { key: '생산기술연구소', label: '생산기술연구소', color: '#845EF7' },
+  { key: '한국총괄', label: '한국총괄', color: '#74C0FC' },
+  { key: 'Global CS센터', label: 'Global CS센터', color: '#69DB7C' },
+  { key: '부문직속(DX)', label: '부문직속(DX)', color: '#F783AC' },
+];
+
+const SMALL_DEPTS = [
+  { label: 'Global EHS실', count: 67 },
+  { label: 'CTO 직속', count: 60 },
+  { label: '법무실', count: 50 },
+  { label: '상생협력센터', count: 35 },
+  { label: '의료기기사업부', count: 29 },
+  { label: 'Samsung Research', count: 24 },
+  { label: 'ESG&스마트공장', count: 19 },
+  { label: '경영지원담당', count: 18 },
+  { label: '무선사업부', count: 18 },
+  { label: '경영혁신센터', count: 17 },
+  { label: '기타', count: 12 },
+];
+
+const DATES = ['6/13','6/17','6/18','6/19','6/20','6/21','6/22','6/23','6/24'];
+
+const RAW = {
+  'Mobile eXperience사업부': [2149,2167,2412,2444,2512,2519,2518,2518,2522],
+  '네트워크사업부':           [693, 695, 740, 741, 761, 762, 762, 762, 757],
+  '생활가전사업부':           [626, 635, 698, 706, 720, 728, 728, 728, 731],
+  '영상디스플레이사업부':     [361, 366, 401, 403, 411, 409, 409, 409, 406],
+  '생산기술연구소':           [173, 175, 200, 207, 209, 209, 209, 209, 209],
+  '한국총괄':                 [99,  99,  108, 108, 109, 108, 108, 108, 111],
+  'Global CS센터':            [92,  92,  100, 105, 107, 107, 107, 107, 106],
+  '부문직속(DX)':             [70,  74,  95,  97,  98,  99,  99,  99,  100],
+};
+
+const TOTAL = 5299;
+
+const legend = document.getElementById('legend');
+DEPTS.forEach(d => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<span class="legend-dot" style="background:${d.color}"></span>${d.label}`;
+  legend.appendChild(item);
+});
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: DATES,
+    datasets: DEPTS.map(d => ({
+      label: d.label,
+      data: RAW[d.key],
+      borderColor: d.color,
+      backgroundColor: d.color + '18',
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: d.color,
+      tension: 0.3,
+      fill: false,
+    }))
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        ticks: { color: '#6b7280', autoSkip: false, font: { size: 11 } },
+        grid: { color: '#1e2130' }
+      },
+      y: {
+        beginAtZero: false,
+        ticks: { color: '#6b7280', font: { size: 11 } },
+        grid: { color: '#1e2130' }
+      }
+    }
+  }
+});
+
+const todayData = DEPTS.map(d => RAW[d.key][8]);
+
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: DEPTS.map(d => d.label),
+    datasets: [{
+      data: todayData,
+      backgroundColor: DEPTS.map(d => d.color + 'cc'),
+      borderColor: DEPTS.map(d => d.color),
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        beginAtZero: true,
+        ticks: { color: '#6b7280', font: { size: 11 } },
+        grid: { color: '#1e2130' }
+      },
+      y: {
+        ticks: { color: '#9ca3af', font: { size: 12 }, autoSkip: false },
+        grid: { display: false }
+      }
+    }
+  }
+});
+
+const deptGrid = document.getElementById('deptGrid');
+DEPTS.forEach((d, i) => {
+  const count = todayData[i];
+  const pct = ((count / TOTAL) * 100).toFixed(1);
+  const div = document.createElement('div');
+  div.className = 'dept-row';
+  div.innerHTML = `
+    <div class="dept-color" style="background:${d.color}"></div>
+    <div class="dept-info">
+      <div class="dept-name">${d.label}</div>
+      <div class="dept-count">${count.toLocaleString()}<span style="font-size:12px;font-weight:400;color:#6b7280;">명</span></div>
+    </div>
+    <div class="dept-pct">${pct}%</div>
+  `;
+  deptGrid.appendChild(div);
+});
+
+const smallList = document.getElementById('smallDeptList');
+SMALL_DEPTS.forEach(d => {
+  const chip = document.createElement('div');
+  chip.className = 'small-dept-chip';
+  chip.innerHTML = `${d.label} <strong>${d.count}</strong>명`;
+  smallList.appendChild(chip);
+});
+</script>
+</body>
+</html>
